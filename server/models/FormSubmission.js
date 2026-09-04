@@ -25,7 +25,7 @@ const formSubmissionSchema = new mongoose.Schema({
     mobileNumber: {
         type: String,
         required: true,
-        match: [/^\+?[1-9]\d{1,14}$/, 'Please add a valid mobile number']
+        match: [/^\+947[0-9]{8}$/, 'Please enter a valid Sri Lankan mobile number.']
     },
     address: {
         type: String,
