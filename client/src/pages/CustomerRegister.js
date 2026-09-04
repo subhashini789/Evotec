@@ -1,93 +1,264 @@
 import React, { useState, useContext } from 'react';
-import { Box, Typography, Button, Container, Paper, TextField, Alert } from '@mui/material';
+import { Box, Typography, Button, Container, Paper, TextField, OutlinedInput, Alert, Link, InputAdornment, IconButton, Stack } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
+import api from '../services/api';
+import Visibility from '@mui/icons-material/Visibility';
+import VisibilityOff from '@mui/icons-material/VisibilityOff';
 
 const CustomerRegister = () => {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
+  const [formData, setFormData] = useState({
+    username: '',
+    email: '',
+    password: '',
+    confirmPassword: ''
+  });
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   
   const navigate = useNavigate();
-  const { register } = useContext(AuthContext);
+  const { login } = useContext(AuthContext);
+
+  const handleChange = (e) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
-
-    if (password !== confirmPassword) {
-      setError('Passwords do not match');
-      return;
+    
+    if (formData.password !== formData.confirmPassword) {
+      return setError('Passwords do not match');
     }
 
-    const res = await register(email, password, confirmPassword);
-    if (res.success) {
-      navigate('/apply');
-    } else {
-      setError(res.message);
+    setLoading(true);
+
+    try {
+      await api.post('/auth/register', {
+        username: formData.username,
+        email: formData.email,
+        password: formData.password,
+        confirmPassword: formData.confirmPassword
+      });
+      setSuccess(true);
+      
+      setTimeout(async () => {
+        await login(formData.email, formData.password, false);
+        navigate('/apply');
+      }, 1500);
+      
+    } catch (error) {
+      setError(error.response?.data?.message || 'Registration failed');
+      setLoading(false);
+    }
+  };
+
+  const inputStyles = {
+    '& .MuiOutlinedInput-root': {
+      bgcolor: '#FFFFFF',
+      borderRadius: '8px',
+      height: '48px',
+      '& fieldset': { borderColor: '#CBD5E1', borderWidth: '1px' },
+      '&:hover fieldset': { borderColor: '#94A3B8' },
+      '&.Mui-focused fieldset': { borderColor: '#2563EB', borderWidth: '1px', boxShadow: '0 0 0 3px rgba(37, 99, 235, 0.12)' },
+    },
+    '& .MuiOutlinedInput-input': { 
+      paddingLeft: '14px', 
+      fontSize: '15px', 
+      color: '#0F172A',
+      '&:-webkit-autofill': {
+        WebkitBoxShadow: '0 0 0 1000px white inset !important',
+        WebkitTextFillColor: '#0F172A !important',
+      }
     }
   };
 
   return (
-    <Container maxWidth="sm">
-      <Box sx={{ mt: 10 }}>
-        <Paper elevation={3} sx={{ p: 4, borderRadius: 2 }}>
-          <Typography variant="h4" gutterBottom align="center" fontWeight="bold">
-            Register
-          </Typography>
+    <Box sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', p: 2, bgcolor: '#F8FAFC' }}>
+      
+      <Typography 
+        variant="h1" 
+        sx={{ 
+          mt: '55px',
+          mb: '28px',
+          textAlign: 'center', 
+          fontWeight: '700', 
+          fontSize: '30px', 
+          letterSpacing: '-0.8px', 
+          display: 'flex', 
+          justifyContent: 'center', 
+          alignItems: 'center' 
+        }}
+      >
+        <span style={{ color: '#0F172A' }}>Form</span>
+        <span style={{ color: '#2563EB' }}>Flow</span>
+      </Typography>
+      
+      <Box sx={{ width: '100%', maxWidth: '440px' }}>
+        <Paper 
+          elevation={0} 
+          sx={{ 
+            p: '36px 38px', 
+            borderRadius: '14px', 
+            bgcolor: '#FFFFFF',
+            border: '1px solid #E2E8F0',
+            boxShadow: '0 10px 25px rgba(15, 23, 42, 0.06)' 
+          }}
+        >
+          <Box sx={{ mb: 4, display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
+            <Typography variant="h5" fontWeight="600" sx={{ color: '#0F172A' }}>
+              Create your account
+            </Typography>
+            <Typography sx={{ mt: '6px', fontSize: '15px', lineHeight: 1.5, color: '#64748B' }}>
+              Join us and submit your application
+            </Typography>
+          </Box>
           
-          {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+          {error && <Alert severity="error" sx={{ mb: 3, borderRadius: '8px' }}>{error}</Alert>}
+          {success && <Alert severity="success" sx={{ mb: 3, borderRadius: '8px' }}>Account created! Signing in...</Alert>}
 
           <form onSubmit={handleSubmit}>
-            <TextField
-              label="Email Address"
-              type="email"
-              fullWidth
-              margin="normal"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-            />
-            <TextField
-              label="Password"
-              type="password"
-              fullWidth
-              margin="normal"
-              required
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              helperText="Minimum 4 characters"
-            />
-            <TextField
-              label="Confirm Password"
-              type="password"
-              fullWidth
-              margin="normal"
-              required
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-            />
+            <Box sx={{ mb: '20px' }}>
+              <Typography sx={{ display: 'block', mb: '7px', fontSize: '14px', fontWeight: '500', color: '#334155' }}>
+                Username *
+              </Typography>
+              <TextField
+                name="username"
+                fullWidth
+                required
+                value={formData.username}
+                onChange={handleChange}
+                variant="outlined"
+                placeholder="johndoe"
+                sx={inputStyles}
+              />
+            </Box>
+
+            <Box sx={{ mb: '20px' }}>
+              <Typography sx={{ display: 'block', mb: '7px', fontSize: '14px', fontWeight: '500', color: '#334155' }}>
+                Email *
+              </Typography>
+              <TextField
+                name="email"
+                type="email"
+                fullWidth
+                required
+                value={formData.email}
+                onChange={handleChange}
+                variant="outlined"
+                placeholder="name@example.com"
+                sx={inputStyles}
+              />
+            </Box>
+
+            <Box sx={{ mb: '20px' }}>
+              <Typography sx={{ display: 'block', mb: '7px', fontSize: '14px', fontWeight: '500', color: '#334155' }}>
+                Password *
+              </Typography>
+              <OutlinedInput
+                name="password"
+                type={showPassword ? 'text' : 'password'}
+                fullWidth
+                required
+                value={formData.password}
+                onChange={handleChange}
+                placeholder="•••••••••"
+                sx={inputStyles}
+                endAdornment={
+                  <InputAdornment position="end">
+                    <IconButton
+                      aria-label="toggle password visibility"
+                      onClick={() => setShowPassword(!showPassword)}
+                      edge="end"
+                      size="small"
+                      sx={{ color: '#0F172A', mr: 0.5 }}
+                    >
+                      {showPassword ? <VisibilityOff size={18} /> : <Visibility size={18} />}
+                    </IconButton>
+                  </InputAdornment>
+                }
+              />
+            </Box>
+
+            <Box sx={{ mb: '24px' }}>
+              <Typography sx={{ display: 'block', mb: '7px', fontSize: '14px', fontWeight: '500', color: '#334155' }}>
+                Confirm Password *
+              </Typography>
+              <OutlinedInput
+                name="confirmPassword"
+                type={showConfirmPassword ? 'text' : 'password'}
+                fullWidth
+                required
+                value={formData.confirmPassword}
+                onChange={handleChange}
+                placeholder="•••••••••"
+                sx={inputStyles}
+                endAdornment={
+                  <InputAdornment position="end">
+                    <IconButton
+                      aria-label="toggle confirm password visibility"
+                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                      edge="end"
+                      size="small"
+                      sx={{ color: '#0F172A', mr: 0.5 }}
+                    >
+                      {showConfirmPassword ? <VisibilityOff size={18} /> : <Visibility size={18} />}
+                    </IconButton>
+                  </InputAdornment>
+                }
+              />
+            </Box>
+
             <Button 
               type="submit" 
-              variant="contained" 
-              color="primary" 
               fullWidth 
-              size="large" 
-              sx={{ mt: 3 }}
+              disabled={loading || success}
+              sx={{ 
+                height: '48px',
+                bgcolor: '#2563EB', 
+                color: '#FFFFFF',
+                borderRadius: '8px',
+                fontSize: '15px',
+                fontWeight: '600',
+                textTransform: 'none',
+                boxShadow: 'none',
+                '&:hover': { bgcolor: '#1D4ED8', boxShadow: 'none' },
+                '&:active': { transform: 'translateY(1px)' },
+                '&:disabled': { bgcolor: '#93C5FD', color: '#FFFFFF', cursor: 'not-allowed' },
+                mb: 3
+              }}
             >
-              Register
+              {loading ? 'Creating Account...' : 'Create Account'}
             </Button>
           </form>
-          
-          <Box sx={{ mt: 2, textAlign: 'center' }}>
-            <Button variant="text" onClick={() => navigate('/login')}>
-              Already have an account? Login
-            </Button>
+
+          <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
+            <Typography variant="body2" color="text.secondary">
+              Already have an account?{' '}
+              <Link component="button" color="primary" fontWeight="500" underline="hover" onClick={() => navigate('/login')}>
+                Sign In
+              </Link>
+            </Typography>
+
+            <Link 
+              component="button" 
+              onClick={() => navigate('/')}
+              sx={{ 
+                color: '#64748B', 
+                fontSize: '14px', 
+                textDecoration: 'none',
+                '&:hover': { color: '#2563EB' }
+              }}
+            >
+              ← Back to home
+            </Link>
           </Box>
         </Paper>
       </Box>
-    </Container>
+    </Box>
   );
 };
 
